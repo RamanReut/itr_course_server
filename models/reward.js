@@ -2,13 +2,24 @@ const { Model } = require('sequelize');
 
 module.exports = (sequelize, DataTypes) => {
     const Locale = require('./locale');
-    const Campaign = require('./campaign');
+    class Reward extends Model {
+        get getCost() {
+            return this.getDataValue('cost');
+        }
+        set setCost(cost) {
+            this.setDataValue('cost', cost);
+        }
 
-    class Reward extends Model {};
+        get getLocale() {
+            return this.getDataValue('locale', locale);
+        }
+        set setLocale() {
+            this.setDataValue('locale', locale);
+        }
+    };
     Reward.init({
-        campaign: Campaign,
-        locale: Locale,
         cost: DataTypes.FLOAT,
     }, {sequelize});
+    Reward.belongsTo(Locale)
     return Reward;
 }

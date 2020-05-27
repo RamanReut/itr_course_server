@@ -1,12 +1,8 @@
 const { Model } = require('sequelize');
 
 module.exports = (sequelize, DataTypes) => {
-    const Locale = require('./locale');
-    const Language = require('./language');
-
     class LocaleContent extends Model {};
     LocaleContent.init({
-        language: Language,
         content: {
             type: DataTypes.TEXT,
             allowNull: false,
@@ -15,7 +11,10 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.STRING(30),
             allowNull: false,
         },
-        locale: Locale,
+        language: {
+            type: DataTypes.STRING(4),
+            allowNull: false,
+        }
     }, {sequelize});
     return LocaleContent;
 }

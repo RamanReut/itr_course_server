@@ -5,9 +5,9 @@ module.exports = (sequelize, DataTypes) => {
 
     class MediaContent extends Model {};
     MediaContent.init({
-        type: MediaContentType,
         url: DataTypes.STRING,
         position: DataTypes.INTEGER,
     }, {sequelize});
+    MediaContent.belongsTo(MediaContentType);
     return MediaContent;
 }
