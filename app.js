@@ -1,13 +1,12 @@
+require('dotenv').config();
 const express = require('express');
 const expressJwt = require('express-jwt');
 const jwksRsa = require('jwks-rsa');
 const cors = require('cors');
-require('dotenv').config();
+const bodyParser = require('body-parser');
+const db = require('./models')
+const campaign = require('./features/campaign/routing');
 
-const authConfig = {
-    domain: process.env.AUTH0_DOMAIN,
-    audience: process.env.AUTH0_API_IDENTIFIER,
-  };
 const checkJwt = expressJwt({
     secret: jwksRsa.expressJwtSecret({
         cache: true,
@@ -21,12 +20,12 @@ const checkJwt = expressJwt({
 });
 
 const app = express();
+db.initializeDatabase();
 
 app.use(express.static('build'));
 app.use(cors({ origin: 'http://localhost:3000' }));
+app.use(bodyParser.json());
 
-app.post('/api/campaign/update', checkJwt, (req, resp) => {
-    resp.send('ok');
-});
+campaign.setRoutes(app, checkJwt)
 
 app.listen(process.env.PORT);
