@@ -6,7 +6,8 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const db = require('./models')
 const campaign = require('./features/campaign/routing');
-const campaignTypes = require('./features/campaignTypes')
+const campaignTypes = require('./features/campaignTypes');
+const path = require('path');
 
 const checkJwt = expressJwt({
     secret: jwksRsa.expressJwtSecret({
@@ -29,5 +30,9 @@ app.use(bodyParser.json());
 
 campaign.setRoutes(app, checkJwt)
 campaignTypes.setRoutes(app);
+
+app.get('/', (req, resp) => {
+    resp.sendFile('index.html');
+});
 
 app.listen(process.env.PORT);
