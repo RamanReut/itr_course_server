@@ -1,6 +1,6 @@
 const { Sequelize, DataTypes } = require('sequelize');
 
-const db = new Sequelize(process.env.DATABASE_URL);
+const db = new Sequelize(process.env.JAWSDB_MARIA_URL);
 
 const Campaign = require('./campaign')(db, DataTypes);
 const CampaignType = require('./campaignType')(db, DataTypes);

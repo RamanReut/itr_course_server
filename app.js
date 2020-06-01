@@ -6,6 +6,7 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const db = require('./models')
 const campaign = require('./features/campaign/routing');
+const campaignTypes = require('./features/campaignTypes')
 
 const checkJwt = expressJwt({
     secret: jwksRsa.expressJwtSecret({
@@ -14,7 +15,7 @@ const checkJwt = expressJwt({
         jwksRequestsPerMinute: 5,
         jwksUri: `https://${process.env.AUTH0_DOMAIN}/.well-known/jwks.json`,
     }),
-    audience: process.env.AUTH0_API_IDENTIFIER,
+    audience: 'https://itrcourse.herokuapp.com/',
     issuer: `https://${process.env.AUTH0_DOMAIN}/`,
     algorithm: ['RS256'],
 });
@@ -27,5 +28,6 @@ app.use(cors({ origin: 'http://localhost:3000' }));
 app.use(bodyParser.json());
 
 campaign.setRoutes(app, checkJwt)
+campaignTypes.setRoutes(app);
 
 app.listen(process.env.PORT);

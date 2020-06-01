@@ -8,113 +8,6 @@ const {
     User: UserModel,
 } = require('../../models');
 
-async function getCampaign(id) {
-    return await CampaignModel.findByPk(id);
-}
-
-/*async function generateLocaleContent(locale) {
-    let promises = [];
-    let res = [];
-    Object.keys(locale).forEach((lang) => {
-        const obj = locale[lang];
-        promises = [
-            ...promises,
-            ...Object.keys(obj).map((field) => {
-                return LocaleContentModel.build({
-                    language: lang,
-                    field: field,
-                    content: obj[field],
-                });
-            }),
-        ]
-    });
-    for (let i = 0; i < promises.length; i++) {
-        res[i] = await promises[i];
-    }
-    return res;
-}
-
-async function createReward(data) {
-    const { cost, ...rest } = data;
-    let Reward = await RewardModel.create();
-    let Locale = await updateLocale(Reward, rest);
-    Reward.setCost = cost;
-    Reward.setLocale = Locale;
-    await Reward.save();
-    return Reward;
-}
-
-async function generateRewards(rewards) {
-    let res = [];
-    let promises = rewards.map((elem) => {
-        return createReward(elem);
-    });
-    for (let i = 0; i < promises.length; i++) {
-        res[i] = await promises[i];
-    }
-    return res;
-}
-
-async function updateLocale(mod, locale) {
-    const localeContent = await generateLocaleContent(locale);
-    console.log(localeContent);
-    const localeObj = await LocaleModel.build({
-        сontent: localeContent,
-    }, {
-        include: [{
-            association: LocaleContentModel,
-            as: 'сontent',
-        }]
-    });
-
-    return localeObj
-    //mod.setLocale = localeObj;
-    //await mod.save();
-}
-
-async function updateType(campaign, type) {
-    const typeObj = await CampaignTypeModel.findOne({ where: { name: type } });
-    campaign.setType = typeObj;
-}
-
-async function updateRewards(campaign, rewards) {
-    const rewardsObj = await generateRewards(rewards);
-    campaign.setRewards = rewardsObj;
-}
-
-async function basicUpdateCampaign(
-    {
-        campaign,
-        locale,
-        avatar,
-        type,
-        rewards,
-    }
-) {
-    await updateLocale(campaign, locale);
-    await updateType(campaign, type);
-    await updateRewards(campaign, rewards);
-    campaign.setAvatar = avatar;
-}
-
-async function createCampaign(
-    {
-        locale,
-        owner,
-        avatar,
-        type,
-        goal,
-        rewards,
-    }
-) {
-    const campaign = await CampaignModel.create();
-    await basicUpdateCampaign({ campaign, locale, avatar, type, rewards });
-    campaign.setGoal = goal.goal;
-    campaign.setFinishDate = new Date(goal.date);
-    campaign.setOwner = owner;
-    return await campaign.save();
-}*/
-
 function generateLocaleContent(locale) {
     let res = [];
     Object.keys(locale).forEach((localeKey) => {
@@ -134,7 +27,7 @@ function generateLocaleContent(locale) {
 
 function generateRewards(rewards) {
     return rewards.map((reward) => {
-        const {cost, ...locale} = reward;
+        const { cost, ...locale } = reward;
         return {
             cost: cost,
             locale: {
@@ -145,6 +38,7 @@ function generateRewards(rewards) {
 }
 
 async function createCampaign({
+    id,
     owner,
     locale,
     avatar,
@@ -155,6 +49,7 @@ async function createCampaign({
 }) {
     const typeInstance = await CampaignTypeModel.findOne({ where: { name: type } });
     let campaign = await CampaignModel.create({
+        id: id,
         content: {
             content: generateLocaleContent(locale),
         },
@@ -195,19 +90,12 @@ async function createCampaign({
 }
 
 async function updateCampaign(
-    {
-        id,
-        owner,
-        locale,
-        avatar,
-        type,
-        rewards,
-    }
+   data,
 ) {
-    const campaign = await CampaignModel.findByPk(id, { include: 'owner' });
-    if (campaign.getOwner.getID() === owner.getID()) {
-        await basicUpdateCampaign(campaign, locale, avatar, type, rewards);
-        await campaign.save();
+    const campaign = await CampaignModel.findByPk(data.id, { 
+        include: ['owner']
+    });
+    if (campaign.owner.id === data.owner.id) {
     } else {
         throw Error(`Wrong owner. Must: ${campaign.getOwner.getID()}; Have: ${owner.getID()}`);
     }
@@ -223,6 +111,121 @@ async function update(data) {
     }
 }
 
+function campaignListLocale(locale) {
+    let res = {};
+    locale.forEach((record) => {
+        if (record.field === 'name')
+            res = {
+                ...res,
+                [record.language]: record.content,
+            }
+    });
+    return res;
+}
+
+function prepareCampaignList(campaigns) {
+    let res = {}
+    campaigns.forEach((campaign) => {
+        res = {
+            ...res,
+            [campaign.id]: {
+                avatar: campaign.avatar,
+                type: campaign.type.name,
+                names: campaignListLocale(campaign.content.content),
+            },
+        }
+    });
+    return res;
+}
+
+async function getCampaigns() {
+    const campaigns = await CampaignModel.findAll(
+        {
+            attributes: ['id', 'avatar'],
+            include: [
+                {
+                    association: 'content',
+                    include: ['content']
+                },
+                'type',
+            ],
+        }
+    );
+    return prepareCampaignList(campaigns);
+}
+
+function generateMedia(media) {
+    return media.map((cur) => {
+        return {
+            url: cur.url,
+            position: cur.position,
+            type: cur.type,
+        }
+    });
+}
+
+function generateLocaleFromDB(locale) {
+    let res = {};
+    locale.forEach((record) => {
+        res[record.language] = {
+            ...res[record.language],
+            [record.field]: record.content,
+        }
+    });
+    return res;
+}
+
+function generateRewardsFromDB(rewards) {
+    return rewards.map((reward => {
+        return {
+            cost: reward.cost,
+            locale: generateLocaleFromDB(reward.locale.content),
+        }
+    }));
+}
+
+function prepareCampaignData(campaign) {
+    return {
+        id: campaign.id,
+        owner: campaign.owner.name,
+        avatar: campaign.avatar,
+        type: campaign.type.name,
+        media: generateMedia(campaign.media),
+        goal: {
+            goal: campaign.goal,
+            date: campaign.finishDate,
+        },
+        rewards: generateRewardsFromDB(campaign.rewards),
+        locale: generateLocaleFromDB(campaign.content.content),
+    }
+}
+
+async function getCampaign(id) {
+    const campaign = await CampaignModel.findByPk(id, {
+        include: [
+            'owner',
+            'type',
+            {
+                association: 'content',
+                include: ['content'],
+            },
+            'media',
+            {
+                association: 'rewards',
+                include: [
+                    {
+                        association: 'locale',
+                        include: ['content'],
+                    },
+                ],
+            },
+        ],
+    });
+    return prepareCampaignData(campaign);
+}
+
 module.exports = {
-    update
+    update,
+    getCampaigns,
+    getCampaign,
 }
