@@ -31,8 +31,8 @@ app.use(bodyParser.json());
 campaign.setRoutes(app, checkJwt)
 campaignTypes.setRoutes(app);
 
-app.get('/', (req, resp) => {
-    resp.sendFile('index.html');
+app.get('*', (req, resp) => {
+    resp.sendFile(__dirname+'/build/index.html');
 });
 
 app.listen(process.env.PORT);
